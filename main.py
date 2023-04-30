@@ -8,7 +8,6 @@ import re
 from matplotlib.figure import Figure
 import matplotlib.dates as mdates
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import matplotlib.ticker as ticker
 
 NBLUE = '#006FFF'
 NCYAN = '#13F4EF'
@@ -19,6 +18,15 @@ NORANGE = '#FF6600'
 NPINK = '#FF00FF'
 NPURPLE = '#9D00FF'
 
+"""
+try:
+    print("Connecting to arduino")
+    with serial.Serial('COM3', 19200) as arduino:
+        throw_away = arduino.readline().decode().strip()
+    print("Connected to arduino")
+except:
+    print("Port not found!")
+"""
 try:
     print("Connecting to arduino")
     arduino = serial.Serial('COM3', 19200)
@@ -32,25 +40,27 @@ def arduino_multi_signal(ard_input):
     ard_list = re.findall(r"[-+]?\d*\.\d+|\d+", data)
     return ard_list
 
-class Example(tk.Frame):
+
+class WHOMMPGUI(tk.Frame):
     def __init__(self, *args, **kwargs):
         tk.Frame.__init__(self, *args, **kwargs)
         self.current_time = dt.datetime.now()
         time_fmt = mdates.DateFormatter('%S')
         start_time = self.current_time - dt.timedelta(seconds=50)  # subtract 50 seconds to get the start time
-        self.time_array = [start_time + dt.timedelta(seconds=(i*0.1)) for i in range(500)] # empty array, current time starts at [-1]
-        self.config(bg='#000000') #top ribbon color
+        self.time_array = [start_time + dt.timedelta(seconds=(i * 0.1)) for i in
+                           range(500)]  # empty array, current time starts at [-1]
+        self.config(bg='#000000')  # top ribbon color
         self.data_range = 500
         self.x_data = [0 + i for i in range(self.data_range)]
-        self.y_data = [0 for i in range(self.data_range)]
-        self.y_data2 = [0 for i in range(self.data_range)]
-        self.y_data3 = [0 for i in range(self.data_range)]
-        self.y_data4 = [0 for i in range(self.data_range)]
-        self.y_data5 = [0 for i in range(self.data_range)]
-        self.y_data6 = [0 for i in range(self.data_range)]
-        self.y_data7 = [0 for i in range(self.data_range)]
-        self.y_data8 = [0 for i in range(self.data_range)]
-        self.y_data9 = [0 for i in range(self.data_range)]
+        self.data_distance = [0 for i in range(self.data_range)]
+        self.data_speed = [0 for i in range(self.data_range)]
+        self.data_gas = [0 for i in range(self.data_range)]
+        self.data_hr = [0 for i in range(self.data_range)]
+        self.data_ir_wave = [0 for i in range(self.data_range)]
+        self.data_pressure = [0 for i in range(self.data_range)]
+        self.data_temperature = [0 for i in range(self.data_range)]
+        self.data_sat = [0 for i in range(self.data_range)]
+        self.data_red_wave = [0 for i in range(self.data_range)]
         self.figure = Figure(figsize=(13, 6), dpi=100, facecolor='#000000')
         self.figure.subplots_adjust(left=0.05,
                                     bottom=0.05,
@@ -59,29 +69,47 @@ class Example(tk.Frame):
                                     wspace=0.2,
                                     hspace=0.4)
         # graphs
-        self.ax1, self.plot1 = self.create_graph(time_fmt, 331, self.time_array, self.y_data, (0, 0.1), NBLUE, "Distance", "Miles")
-        self.ax2, self.plot2 = self.create_graph(time_fmt, 332, self.time_array, self.y_data2, (0, 25), NCYAN, "Speed", "M/H")
-        self.ax3, self.plot3 = self.create_graph(time_fmt, 339, self.time_array, self.y_data3, (150, 800), NGREEN, "Gas", "unitz")
-        self.ax4, self.plot4 = self.create_graph(time_fmt, 334, self.time_array, self.y_data4, (0, 200), NYELLOW, "Heart Rate", 'BPM')
-        #graph with 2 y-axis
-        self.ax5, self.plot5, self.plot55 = self.double_graph(time_fmt, 336, self.time_array, self.y_data5, self.y_data9, (0, 0.1), 'white', 'IR Wave', "AU", "AU")
-        self.ax6, self.plot6 = self.create_graph(time_fmt, 337, self.time_array, self.y_data6, (0, 0.1), NPINK, 'Pressure', "kPa")
-        self.ax7, self.plot7 = self.create_graph(time_fmt, 338, self.time_array, self.y_data7, (0, 0.1), NPURPLE, 'Temp', "deg")
-        self.ax8, self.plot8 = self.create_graph(time_fmt, 335, self.time_array, self.y_data8, (0, 0.1), NORANGE, 'Sp02', "%")
-        #self.ax1.xaxis.set_visible(False)
+        self.ax_distance, self.plot_distance = self.create_graph(time_fmt, 331, self.time_array, self.data_distance, (0, 0.1), NBLUE,
+                                                 "Distance", "Miles")
+        self.ax_speed, self.plot_speed = self.create_graph(time_fmt, 332, self.time_array, self.data_speed, (0, 25), NCYAN, "Speed",
+                                                 "M/H")
+        self.ax_gas, self.plot_gas = self.create_graph(time_fmt, 339, self.time_array, self.data_gas, (150, 800), NGREEN,
+                                                 "Gas", "unitz")
+        self.ax_hr, self.plot_hr = self.create_graph(time_fmt, 334, self.time_array, self.data_hr, (0, 200), NYELLOW,
+                                                 "Heart Rate", 'BPM')
+        # graph with 2 y-axis
+        self.ax_ir_wave, self.plot_ir_wave, self.plot_red_wave = self.double_graph(time_fmt, 336, self.time_array, self.data_ir_wave,
+                                                              self.data_red_wave, (0, 0.1), 'white', 'IR Wave', "AU", "AU")
+        self.ax_pressure, self.plot_pressure = self.create_graph(time_fmt, 337, self.time_array, self.data_pressure, (0, 0.1), NPINK,
+                                                 'Pressure', "kPa")
+        self.ax_temperature, self.plot_temperature = self.create_graph(time_fmt, 338, self.time_array, self.data_temperature, (0, 0.1), NPURPLE,
+                                                 'Temp', "deg")
+        self.ax_sat, self.plot_sat = self.create_graph(time_fmt, 335, self.time_array, self.data_sat, (0, 0.1), NORANGE,
+                                                 'Sp02', "%")
+        # self.ax_distance.xaxis.set_visible(False)
 
-        #plot area to place static/dynamic text
+        # plot area to place static/dynamic text
         fs = 15
         self.textarea = self.figure.add_subplot(236)
         self.textarea.axis('off')
-        self.ax1_text = self.textarea.text(0, 1200, '', fontsize=fs, ha='left', va='top', color=NBLUE, backgroundcolor='black')
-        self.ax2_text = self.textarea.text(0.6, 1200, '', fontsize=fs, ha='left', va='top', color=NCYAN, backgroundcolor='black')
-        self.ax9_text = self.textarea.text(0.3, 1150, '', fontsize=fs, ha='left', va='top', color=NRED, backgroundcolor='black')
-        self.ax4_text = self.textarea.text(0, 1100, '', fontsize=fs, ha='left', va='top', color=NYELLOW, backgroundcolor='black')
-        self.ax8_text = self.textarea.text(0.6, 1100, '', fontsize=fs, ha='left', va='top', color=NORANGE, backgroundcolor='black')
-        self.ax6_text = self.textarea.text(0, 1000, '', fontsize=fs, ha='left', va='top', color=NPINK, backgroundcolor='black')
-        self.ax7_text = self.textarea.text(0.3, 950, '', fontsize=fs, ha='left', va='top', color=NPURPLE, backgroundcolor='black')
-        self.ax3_text = self.textarea.text(0.6, 1000, '', fontsize=fs, ha='left', va='top', color=NGREEN, backgroundcolor='black')
+        self.text_distance = self.textarea.text(0, 1200, '', fontsize=fs, ha='left', va='top', color=NBLUE,
+                                           backgroundcolor='black')
+        self.text_speed = self.textarea.text(0.6, 1200, '', fontsize=fs, ha='left', va='top', color=NCYAN,
+                                           backgroundcolor='black')
+        self.text_time = self.textarea.text(0.3, 1150, '', fontsize=fs, ha='left', va='top', color=NRED,
+                                           backgroundcolor='black')
+        self.text_hr = self.textarea.text(0, 1100, '', fontsize=fs, ha='left', va='top', color=NYELLOW,
+                                           backgroundcolor='black')
+        self.text_sat = self.textarea.text(0.6, 1100, '', fontsize=fs, ha='left', va='top', color=NORANGE,
+                                           backgroundcolor='black')
+        self.text_pressure = self.textarea.text(0, 1000, '', fontsize=fs, ha='left', va='top', color=NPINK,
+                                           backgroundcolor='black')
+        self.text_temperature = self.textarea.text(0.3, 950, '', fontsize=fs, ha='left', va='top', color=NPURPLE,
+                                           backgroundcolor='black')
+        self.text_gas = self.textarea.text(0.6, 1000, '', fontsize=fs, ha='left', va='top', color=NGREEN,
+                                           backgroundcolor='black')
+        self.text_waves = self.textarea.text(0.3, 1050, '', fontsize=fs, ha='left', va='top', color='white',
+                                            backgroundcolor='black')
 
         """
         testing text location
@@ -107,7 +135,7 @@ class Example(tk.Frame):
         self.speed = 0
         self.distance = 0
         self.start = time.time()
-        self.speed_arr = deque([[self.start,1]])
+        self.speed_arr = deque([[self.start, 1]])
         self.beat = 0
         self.hr = 0
         self.update_plot()
@@ -159,16 +187,16 @@ class Example(tk.Frame):
 
     def calc_params(self, index1, index2):
         self.distance = self.rotations * 0.0038
-        self.rot_dif = self.speed_arr[index1][1] - self.speed_arr[index2][1] ##################################################always 1
+        self.rot_dif = self.speed_arr[index1][1] - self.speed_arr[index2][1]  # always 1 currently, potential to get different averages in future
         self.time_dif = self.speed_arr[index1][0] - self.speed_arr[index2][0]
 
-        speed_num = 8                      # 8 decided on arbitrarily
+        speed_num = 8  # 8 decided on arbitrarily, increase for wider avg, dec for more instant speed
         if len(self.speed_arr) > speed_num:
             dt = [self.speed_arr[-1][0] - self.speed_arr[-i][0] for i in range(2, speed_num)]
             avg_pedal = [(num / (idx + 1)) for idx, num in enumerate(dt)]
             self.speed = 0.0038 / ((sum(avg_pedal) / len(avg_pedal)) / 3600)
-        else:
-            if self.time_dif == 0:
+        else: # small exceptions for start of run before speed_arr is populated
+            if self.time_dif < 0.004:
                 self.speed = 0
             else:
                 self.speed = (self.rot_dif * 0.0038) / self.time_dif * 3600
@@ -183,9 +211,20 @@ class Example(tk.Frame):
                         and data[i] > data[i + 1] and data[i] > data[i + 2]:
                     peaks += 1
             tick = self.time_array[490] - self.time_array[400]
-            self.hr = (60/tick.total_seconds()) * peaks
+            self.hr = (60 / tick.total_seconds()) * peaks
+
+    def graph_shift(self, shifting_graph, new_data, shifting_plot, shifting_y):
+        shifting_graph.append(new_data)
+        shifting_graph.pop(0)
+        shifting_plot.set_xdata(self.time_array)
+        shifting_plot.set_ydata(shifting_y)
+
+    def graph_lims(self, ax_in, ymin, ymax):
+        ax_in.set_xlim(self.time_array[0], self.time_array[-1])
+        ax_in.set_ylim(ymin, ymax)
 
     def update_plot(self):
+        print("SPEED: ", self.speed)
         if self.timer >= 100:
             self.timer = 0
         self.timer += 1
@@ -195,22 +234,21 @@ class Example(tk.Frame):
         # 20:57:08.044 -> MQA: 236 MQB: 151 MQC: 15 MQD: 54 IR:1152 Red: 271 BPM: 4.01 AvgBPM: 0 Sat: 99 temperatureF: 89.4875: No_finger
 
         bike_signal = int(in_signal[0])
-        gas1 = int(in_signal[1])
-        ir_wave = int(float(in_signal[4]))
-        red_wave = int(float(in_signal[5]))
-        pressure = int(float(in_signal[2]))
-        temperature = int(float(in_signal[9]))
-        sat = int(float(in_signal[8]))
-        print(in_signal)
+        self.gas1 = int(in_signal[1])
+        self.pressure = int(float(in_signal[2]))
+        self.ir_wave = int(float(in_signal[4]))
+        self.red_wave = int(float(in_signal[5]))
+        self.sat = int(float(in_signal[8]))
+        self.temperature = int(float(in_signal[9]))
         ############gas1 = -45.06*ratio*ratio+30.354*ratio+94.845
 
+        # create an array with time of when pedals have occured
         if bike_signal - self.previous > 200:
             self.rotations += 1
             self.speed_arr.append([time.time(), self.rotations])
             if len(self.speed_arr) > 10:
                 self.speed_arr.popleft()
         self.previous = bike_signal
-
         pedals = len(self.speed_arr)
         if pedals > 1:
             self.calc_params(pedals - 1, pedals - 2)
@@ -218,101 +256,58 @@ class Example(tk.Frame):
             self.rot_dif = 0
             self.time_dif = 0
 
-        # update the x-axis
-        self.x_data.append(self.x_data[-1] + 1)
-        self.x_data.pop(0)
-
-        self.time_array.append(dt.datetime.now())
-        self.time_array.pop(0)
-
-        # distance
-        self.y_data.append(self.distance)
-        self.y_data.pop(0)
-        self.plot1.set_xdata(self.time_array)
-        self.plot1.set_ydata(self.y_data)
-        self.ax1.set_xlim(self.time_array[0], self.time_array[-1])
-        self.ax1.set_ylim(min(self.y_data) , max(self.y_data)+0.1)
-
-        # speed
-        self.y_data2.append(self.speed)
-        self.y_data2.pop(0)
-        self.plot2.set_xdata(self.time_array)
-        self.plot2.set_ydata(self.y_data2)
-        self.ax2.set_xlim(self.time_array[0], self.time_array[-1])
-
-        # gas
-        self.y_data3.append(gas1)
-        self.y_data3.pop(0)
-        self.plot3.set_xdata(self.time_array)
-        self.plot3.set_ydata(self.y_data3)
-        self.ax3.set_xlim(self.time_array[0], self.time_array[-1])
-        self.ax3.set_ylim(min(self.y_data3) - 15, max(self.y_data3) + 15)
-
-        # heart rate
-        self.y_data4.append(self.hr)
-        self.y_data4.pop(0)
-        self.plot4.set_xdata(self.time_array)
-        self.plot4.set_ydata(self.y_data4)
-        self.ax4.set_xlim(self.time_array[0], self.time_array[-1])
-        self.ax4.set_ylim(0, 200)
-
-        # IR/Red wavelengths
-        self.y_data5.append(ir_wave)
-        self.y_data5.pop(0)
-        if ir_wave > 80000:
-            self.wave_calc(self.y_data5)
+        # only computes heart rate if finger is detected
+        if self.ir_wave > 80000:
+            self.wave_calc(self.data_ir_wave)
         else:
             self.hr = 0
 
-        self.plot5.set_xdata(self.time_array)
-        self.plot5.set_ydata(self.y_data5)
-        self.ax5.set_xlim(self.time_array[0], self.time_array[-1])
-        self.ax5.set_ylim(min(self.y_data5) - 1000, max(self.y_data5) + 1000)
-        self.y_data9.append(red_wave) # part 2
-        self.y_data9.pop(0)
-        self.plot55.set_xdata(self.time_array)
-        self.plot55.set_ydata(self.y_data9)
+        # update the x-axis
+        self.x_data.append(self.x_data[-1] + 1)
+        self.x_data.pop(0)
+        self.time_array.append(dt.datetime.now())
+        self.time_array.pop(0)
 
-        # Pressure
-        self.y_data6.append(pressure)
-        self.y_data6.pop(0)
-        self.plot6.set_xdata(self.time_array)
-        self.plot6.set_ydata(self.y_data6)
-        self.ax6.set_xlim(self.time_array[0], self.time_array[-1])
-        self.ax6.set_ylim(min(self.y_data6)-5, max(self.y_data6)+5)
+        # update each plot with new data
+        self.graph_shift(self.data_distance, self.distance, self.plot_distance, self.data_distance)
+        self.graph_shift(self.data_speed, self.speed, self.plot_speed, self.data_speed)
+        self.graph_shift(self.data_gas, self.gas1, self.plot_gas, self.data_gas)
+        self.graph_shift(self.data_hr, self.hr, self.plot_hr, self.data_hr)
+        self.graph_shift(self.data_ir_wave, self.ir_wave, self.plot_ir_wave, self.data_ir_wave)
+        self.graph_shift(self.data_pressure, self.pressure, self.plot_pressure, self.data_pressure)
+        self.graph_shift(self.data_temperature, self.temperature, self.plot_temperature, self.data_temperature)
+        self.graph_shift(self.data_sat, self.sat, self.plot_sat, self.data_sat)
+        self.graph_shift(self.data_red_wave, self.red_wave, self.plot_red_wave, self.data_red_wave)
 
-        # Temperature
-        self.y_data7.append(temperature)
-        self.y_data7.pop(0)
-        self.plot7.set_xdata(self.time_array)
-        self.plot7.set_ydata(self.y_data7)
-        self.ax7.set_xlim(self.time_array[0], self.time_array[-1])
-        self.ax7.set_ylim(70, 105)
-
-        # Pulse Ox
-        self.y_data8.append(sat)
-        self.y_data8.pop(0)
-        self.plot8.set_xdata(self.time_array)
-        self.plot8.set_ydata(self.y_data8)
-        self.ax8.set_xlim(self.time_array[0], self.time_array[-1])
-        self.ax8.set_ylim(80, 105)
+        # moving on the x-axis and scaling the y-axis
+        self.graph_lims(self.ax_distance, min(self.data_distance), max(self.data_distance) + 0.1)
+        self.graph_lims(self.ax_speed, 0, 25)
+        self.graph_lims(self.ax_gas, min(self.data_gas) - 15, max(self.data_gas) + 15)
+        self.graph_lims(self.ax_hr, 0, 200)
+        self.graph_lims(self.ax_ir_wave, min(self.data_ir_wave) - 1000, max(self.data_ir_wave) + 1000)
+        self.graph_lims(self.ax_pressure, min(self.data_pressure) - 5, max(self.data_pressure) + 5)
+        self.graph_lims(self.ax_temperature, 70, 105)
+        self.graph_lims(self.ax_sat, 80, 105)
 
         # Text box
         self.textarea.set_ylim(0, 500)
-        self.ax1_text.set_text(f"Distance:{self.distance: .2f}mi")
-        self.ax2_text.set_text(f"Speed:{self.speed: .2f}mph")
-        self.ax3_text.set_text(f"{gas1: .1f}gas")
-        self.ax4_text.set_text(f"HR:{self.hr: 0.0f}bpm")
-        self.ax6_text.set_text(f"{pressure: .2f}kpa")
-        self.ax7_text.set_text(f"{temperature: .2f}\N{DEGREE SIGN}F")
-        self.ax8_text.set_text(f"{sat: .2f}%")
+        self.text_distance.set_text(f"Distance:{self.distance: .2f}mi")
+        self.text_speed.set_text(f"Speed:{self.speed: .2f}mph")
+        self.text_gas.set_text(f"{self.gas1: .1f}gas")
+        self.text_hr.set_text(f"HR:{self.hr: 0.0f}bpm")
+        self.text_pressure.set_text(f"{self.pressure: .2f}kpa")
+        self.text_temperature.set_text(f"{self.temperature: .2f}\N{DEGREE SIGN}F")
+        self.text_sat.set_text(f"{self.sat: .2f}%")
+        self.text_waves.set_text(f"IR: {self.ir_wave/1000: .0f}k Red: {self.red_wave/1000: .0f}k")
         current = self.time_array[-1] - self.current_time
-        self.ax9_text.set_text(f"Elapsed: {str(current).split('.')[0]}")
+        self.text_time.set_text(f"Elapsed: {str(current).split('.')[0]}")
 
-        self.canvas.draw_idle()  # redraw plot
+        # redraw plot
+        self.canvas.draw_idle()
         threading.Timer(0.001, self.update_plot).start()
+
 
 if __name__ == "__main__":
     root = tk.Tk()
-    Example(root).pack(side="top", fill="both", expand=True)
+    WHOMMPGUI(root).pack(side="top", fill="both", expand=True)
     root.mainloop()
