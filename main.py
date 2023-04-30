@@ -18,15 +18,6 @@ NORANGE = '#FF6600'
 NPINK = '#FF00FF'
 NPURPLE = '#9D00FF'
 
-"""
-try:
-    print("Connecting to arduino")
-    with serial.Serial('COM3', 19200) as arduino:
-        throw_away = arduino.readline().decode().strip()
-    print("Connected to arduino")
-except:
-    print("Port not found!")
-"""
 try:
     print("Connecting to arduino")
     arduino = serial.Serial('COM3', 19200)
@@ -40,17 +31,24 @@ def arduino_multi_signal(ard_input):
     ard_list = re.findall(r"[-+]?\d*\.\d+|\d+", data)
     return ard_list
 
-
 class WHOMMPGUI(tk.Frame):
     def __init__(self, *args, **kwargs):
         tk.Frame.__init__(self, *args, **kwargs)
         self.current_time = dt.datetime.now()
         time_fmt = mdates.DateFormatter('%S')
+        self.data_range = 500
         start_time = self.current_time - dt.timedelta(seconds=50)  # subtract 50 seconds to get the start time
         self.time_array = [start_time + dt.timedelta(seconds=(i * 0.1)) for i in
-                           range(500)]  # empty array, current time starts at [-1]
+                           range(self.data_range)]  # empty array, current time starts at [-1]
         self.config(bg='#000000')  # top ribbon color
-        self.data_range = 500
+        label = tk.Label(self, text="W.H.O.M.M.P.", fg=NGREEN, bg='#000000', font=20)
+        label.pack(pady=10, padx=10)
+        self.figure = Figure(figsize=(13, 6), dpi=100, facecolor='#000000')
+        self.figure.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.2,  hspace=0.4)
+        self.canvas = FigureCanvasTkAgg(self.figure, self)
+        self.canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+
+        # creating arrays to store data
         self.x_data = [0 + i for i in range(self.data_range)]
         self.data_distance = [0 for i in range(self.data_range)]
         self.data_speed = [0 for i in range(self.data_range)]
@@ -61,18 +59,12 @@ class WHOMMPGUI(tk.Frame):
         self.data_temperature = [0 for i in range(self.data_range)]
         self.data_sat = [0 for i in range(self.data_range)]
         self.data_red_wave = [0 for i in range(self.data_range)]
-        self.figure = Figure(figsize=(13, 6), dpi=100, facecolor='#000000')
-        self.figure.subplots_adjust(left=0.05,
-                                    bottom=0.05,
-                                    right=0.95,
-                                    top=0.95,
-                                    wspace=0.2,
-                                    hspace=0.4)
-        # graphs
+
+        # creating the graphs and axes for each input
         self.ax_distance, self.plot_distance = self.create_graph(time_fmt, 331, self.time_array, self.data_distance, (0, 0.1), NBLUE,
                                                  "Distance", "Miles")
-        self.ax_speed, self.plot_speed = self.create_graph(time_fmt, 332, self.time_array, self.data_speed, (0, 25), NCYAN, "Speed",
-                                                 "M/H")
+        self.ax_speed, self.plot_speed = self.create_graph(time_fmt, 332, self.time_array, self.data_speed, (0, 25), NCYAN,
+                                                 "Speed", "M/H")
         self.ax_gas, self.plot_gas = self.create_graph(time_fmt, 339, self.time_array, self.data_gas, (150, 800), NGREEN,
                                                  "Gas", "unitz")
         self.ax_hr, self.plot_hr = self.create_graph(time_fmt, 334, self.time_array, self.data_hr, (0, 200), NYELLOW,
@@ -86,7 +78,6 @@ class WHOMMPGUI(tk.Frame):
                                                  'Temp', "deg")
         self.ax_sat, self.plot_sat = self.create_graph(time_fmt, 335, self.time_array, self.data_sat, (0, 0.1), NORANGE,
                                                  'Sp02', "%")
-        # self.ax_distance.xaxis.set_visible(False)
 
         # plot area to place static/dynamic text
         fs = 15
@@ -124,10 +115,7 @@ class WHOMMPGUI(tk.Frame):
         self.textarea.text(0.5, 1200, '<0.5,1200' , fontsize=fs, ha='left', va='top', color=NYELLOW)
         """
 
-        label = tk.Label(self, text="W.H.O.M.M.P.", fg=NGREEN, bg='#000000', font=20)
-        label.pack(pady=10, padx=10)
-        self.canvas = FigureCanvasTkAgg(self.figure, self)
-        self.canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+        # initializing values to be used in live calcs
         self.timer = 0
         self.ir_timer = 0
         self.rotations = 1
@@ -138,20 +126,9 @@ class WHOMMPGUI(tk.Frame):
         self.speed_arr = deque([[self.start, 1]])
         self.beat = 0
         self.hr = 0
-        self.update_plot()
 
-    def graph_info(self, xdata, ydata, xformat, location, ylimits, line_color, y_units, title):
-        graph_dict = {
-            "xdata": xdata,
-            "ydata": ydata,
-            "xformat": xformat,
-            "location": location,
-            "ylimits": ylimits,
-            "line_color": line_color,
-            "y_units": y_units,
-            "title": title
-        }
-        return graph_dict
+
+        self.update_plot()
 
     def create_graph(self, xformat, location, xdata, ydata, ylim, line_color, dataname, units):
         gname = self.figure.add_subplot(location)
@@ -166,6 +143,10 @@ class WHOMMPGUI(tk.Frame):
         return gname, graph
 
     def double_graph(self, xformat, location, xdata, ydata, y2_data, ylim, line_color, dataname, units, units2):
+        """
+        performs same function as create_graph() but adds another array of data to second y-axis
+        displays 2nd y-axis on the right
+        """
         gname = self.figure.add_subplot(location)
         graph1 = gname.plot(xdata, ydata, label=dataname, color=line_color)[0]
         gname.set_ylim(ylim[0], ylim[1])
@@ -213,25 +194,28 @@ class WHOMMPGUI(tk.Frame):
             tick = self.time_array[490] - self.time_array[400]
             self.hr = (60 / tick.total_seconds()) * peaks
 
-    def graph_shift(self, shifting_graph, new_data, shifting_plot, shifting_y):
+    def graph_shift(self, shifting_graph, new_data, shifting_plot):
         shifting_graph.append(new_data)
         shifting_graph.pop(0)
         shifting_plot.set_xdata(self.time_array)
-        shifting_plot.set_ydata(shifting_y)
+        shifting_plot.set_ydata(shifting_graph)
 
     def graph_lims(self, ax_in, ymin, ymax):
         ax_in.set_xlim(self.time_array[0], self.time_array[-1])
         ax_in.set_ylim(ymin, ymax)
 
     def update_plot(self):
-        print("SPEED: ", self.speed)
         if self.timer >= 100:
             self.timer = 0
         self.timer += 1
+
         in_signal = arduino_multi_signal(arduino)
+        while len(in_signal) < 10: #arduino occasionally returns [] for first value
+            in_signal.append(0)
         #in_signal = [0, 1, 2, 3, 70000, 28000, 6, 7, 8, 9]
-        # [a0, a1, a2, a3, IR, Red, BPM, AvgBPM, SP02, ?Finger]###################
-        # 20:57:08.044 -> MQA: 236 MQB: 151 MQC: 15 MQD: 54 IR:1152 Red: 271 BPM: 4.01 AvgBPM: 0 Sat: 99 temperatureF: 89.4875: No_finger
+        # [a0, a1, a2, a3, IR, Red, BPM, AvgBPM, SP02, ?Finger]
+
+        print(in_signal)
 
         bike_signal = int(in_signal[0])
         self.gas1 = int(in_signal[1])
@@ -240,7 +224,7 @@ class WHOMMPGUI(tk.Frame):
         self.red_wave = int(float(in_signal[5]))
         self.sat = int(float(in_signal[8]))
         self.temperature = int(float(in_signal[9]))
-        ############gas1 = -45.06*ratio*ratio+30.354*ratio+94.845
+
 
         # create an array with time of when pedals have occured
         if bike_signal - self.previous > 200:
@@ -269,15 +253,15 @@ class WHOMMPGUI(tk.Frame):
         self.time_array.pop(0)
 
         # update each plot with new data
-        self.graph_shift(self.data_distance, self.distance, self.plot_distance, self.data_distance)
-        self.graph_shift(self.data_speed, self.speed, self.plot_speed, self.data_speed)
-        self.graph_shift(self.data_gas, self.gas1, self.plot_gas, self.data_gas)
-        self.graph_shift(self.data_hr, self.hr, self.plot_hr, self.data_hr)
-        self.graph_shift(self.data_ir_wave, self.ir_wave, self.plot_ir_wave, self.data_ir_wave)
-        self.graph_shift(self.data_pressure, self.pressure, self.plot_pressure, self.data_pressure)
-        self.graph_shift(self.data_temperature, self.temperature, self.plot_temperature, self.data_temperature)
-        self.graph_shift(self.data_sat, self.sat, self.plot_sat, self.data_sat)
-        self.graph_shift(self.data_red_wave, self.red_wave, self.plot_red_wave, self.data_red_wave)
+        self.graph_shift(self.data_distance, self.distance, self.plot_distance)
+        self.graph_shift(self.data_speed, self.speed, self.plot_speed)
+        self.graph_shift(self.data_gas, self.gas1, self.plot_gas)
+        self.graph_shift(self.data_hr, self.hr, self.plot_hr)
+        self.graph_shift(self.data_ir_wave, self.ir_wave, self.plot_ir_wave)
+        self.graph_shift(self.data_pressure, self.pressure, self.plot_pressure)
+        self.graph_shift(self.data_temperature, self.temperature, self.plot_temperature)
+        self.graph_shift(self.data_sat, self.sat, self.plot_sat)
+        self.graph_shift(self.data_red_wave, self.red_wave, self.plot_red_wave)
 
         # moving on the x-axis and scaling the y-axis
         self.graph_lims(self.ax_distance, min(self.data_distance), max(self.data_distance) + 0.1)
