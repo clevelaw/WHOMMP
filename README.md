@@ -3,11 +3,11 @@ W.H.O.M.M.P. is a Python-based GUI utilizing Tkinter and Matplotlib libraries th
   
 ##**Collected data**
 **Pedal revolutions:** A built-in cadence sensor was rewired to send a signal straight to the Arduino instead of the bike's built-in 7-segment display.
-**CO2 concentration:** MQ-135 sensor to measure CO2 concentrations in the air.
-**IR and Red Light Absorbance:** MAX30102 Pulse + Oximeter sensor emits IR and Red Light that can then be collected and used to determine pulse and blood oxygen saturation. The sensor has recommended software, but after testing, this was found to be fairly inaccurate and slow.
-**Air pressure sensor:** for future use in measuring respiratory parameters.
-**Temperature:** Basic thermistor calibrated for physiological temperatures.
-**SpO2:** Calculates the blood oxygen saturation level.
+  **CO2 concentration:** MQ-135 sensor to measure CO2 concentrations in the air.
+  **IR and Red Light Absorbance:** MAX30102 Pulse + Oximeter sensor emits IR and Red Light that can then be collected and used to determine pulse and blood oxygen saturation. The sensor has recommended software, but after testing, this was found to be fairly inaccurate and slow.
+  **Air pressure sensor:** for future use in measuring respiratory parameters.
+  **Temperature:** Basic thermistor calibrated for physiological temperatures.
+  **SpO2:** Calculates the blood oxygen saturation level.
 
 ##**Derived parameters:**
 
