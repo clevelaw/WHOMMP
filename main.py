@@ -11,7 +11,6 @@ from matplotlib.figure import Figure
 import matplotlib.dates as mdates
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-# Define colors and serial settings
 NBLUE = '#006FFF'
 NCYAN = '#13F4EF'
 NGREEN = '#68FF00'
@@ -22,9 +21,8 @@ NPINK = '#FF00FF'
 NPURPLE = '#9D00FF'
 SERIAL_PORT = 'COM3'
 BAUD_RATE = 9600
-GLOBAL_TIME = time.time()
 
-# connect to Arduino
+# always form a connection at the start, end the program if unable to connect
 try:
     print("Connecting to Arduino...")
     arduino = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=None)
@@ -58,6 +56,7 @@ def read_arduino(ard_input) -> list:
 def on_closing() -> None:
     """Stop the script when the GUI is closed."""
     root.destroy()
+    arduino.close()
 
 
 class GraphPanel:
@@ -70,7 +69,7 @@ class GraphPanel:
         self.current_time = dt.datetime.now()
         self.time_array = [self.current_time - dt.timedelta(seconds=i * 0.04)
                            for i in range(data_range)][::-1]
-        # deques to store collected data
+        # store collected data for graphing and post-collection processing
         self.data_distance = deque([0] * data_range)
         self.data_speed = deque([0] * data_range)
         self.data_gas = deque([0] * data_range)
@@ -81,26 +80,26 @@ class GraphPanel:
         self.data_sat = deque([0] * data_range)
         self.data_red_wave = deque([0] * data_range)
 
-        # create graphs
-        self.ax_distance, self.plot_distance = self.create_graph([3, 3, 1],
-                                                                 self.data_distance, (0, 0.1), NBLUE, "Distance", "Miles")
-        self.ax_speed, self.plot_speed = self.create_graph([3, 3, 2],
-                                                           self.data_speed, (0, 25), NCYAN, "Speed", "mph")
-        self.ax_gas, self.plot_gas = self.create_graph([3, 3, 3],
-                                                       self.data_gas, (150, 800), NGREEN, "Gas", "ppm")
-        self.ax_hr, self.plot_hr = self.create_graph([3, 3, 4],
-                                                     self.data_hr, (0, 200), NYELLOW, "Heart Rate", "BPM")
-        self.ax_pressure, self.plot_pressure = self.create_graph([3, 3, 7],
-                                                                 self.data_pressure, (0, 0.1), NPINK, 'Pressure', "kPa")
-        self.ax_temperature, self.plot_temperature = self.create_graph([3, 3, 8],
-                                                                       self.data_temperature, (0, 0.1), NPURPLE, 'Temp', "deg")
-        self.ax_sat, self.plot_sat = self.create_graph([3, 3, 9],
-                                                       self.data_sat, (0, 0.1), NORANGE, 'Sp02', "%")
-        self.ax_ir_wave, self.plot_ir_wave, self.plot_red_wave = self.double_graph([3, 3, 6],
-                                                                                   self.data_ir_wave, self.data_red_wave, (0, 0.1), 'white', 'Absorbance', "AU", "AU")
+        # create graphs, manually set locations and limits
+        self.ax_distance, self.plot_distance = self.create_graph(
+            [3, 3, 1], self.data_distance, (0, 0.1), NBLUE, "Distance", "Miles")
+        self.ax_speed, self.plot_speed = self.create_graph(
+            [3, 3, 2], self.data_speed, (0, 25), NCYAN, "Speed", "mph")
+        self.ax_gas, self.plot_gas = self.create_graph(
+            [3, 3, 3], self.data_gas, (0, 40), NGREEN, "CO2", "mmHg")
+        self.ax_hr, self.plot_hr = self.create_graph(
+            [3, 3, 4], self.data_hr, (0, 200), NYELLOW, "Heart Rate", "BPM")
+        self.ax_pressure, self.plot_pressure = self.create_graph(
+            [3, 3, 7], self.data_pressure, (0, 0.1), NPINK, 'Pressure', "kPa")
+        self.ax_temperature, self.plot_temperature = self.create_graph(
+            [3, 3, 8], self.data_temperature, (0, 0.1), NPURPLE, 'Temp', "deg")
+        self.ax_sat, self.plot_sat = self.create_graph(
+            [3, 3, 9], self.data_sat, (0, 0.1), NORANGE, 'Sp02', "%")
+        self.ax_ir_wave, self.plot_ir_wave, self.plot_red_wave = self.double_graph(
+            [3, 3, 6], self.data_ir_wave, self.data_red_wave, (0, 0.1), 'white', 'Absorbance', "AU", "AU")
 
     def find_x_limit(self, input_array) -> int:
-        """Find the index corresponding to 30 seconds before the latest time."""
+        """Binary search to dynamically set the x axis limit"""
         time_window = (
             # depends on read speeds
             self.time_array[-1] - self.time_array[0]).seconds
@@ -142,7 +141,7 @@ class GraphPanel:
         ax.set_ylabel(units, color=line_color)
         ax.tick_params(axis='x', labelcolor=line_color)
         ax.tick_params(axis='y', labelcolor=line_color)
-        # Second y-axis
+        # formatting second y-axis
         ax2 = ax.twinx()
         plot_line2 = ax2.plot(self.time_array, y2_data,
                               label=dataname, color='red')[0]
@@ -153,7 +152,7 @@ class GraphPanel:
         return ax, plot_line1, plot_line2
 
     def graph_shift(self, data_deque, new_data, plot_line):
-        """Shift the data (FIFO) and update the plot’s data."""
+        """Shift the data (FIFO) and update the plot's data."""
         data_deque.append(new_data)
         data_deque.popleft()
         plot_line.set_xdata(self.time_array)
@@ -175,9 +174,9 @@ class CalculationHandler:
     """Computes speed, distance, heart rate, etc."""
 
     def __init__(self):
-        self.rotations = 1
+        self.rotations = -1
         self.previous = 0
-        self.speed_arr = deque([[time.time(), 1]])
+        self.speed_arr = deque([[time.time(), 0]])
         self.ir_timer = 0
         self.hr = 0
         self.speed = 0
@@ -268,7 +267,7 @@ class TextPanel:
         """Update the text display with current values."""
         self.text_distance.set_text(f"Distance: {distance: .2f}mi")
         self.text_speed.set_text(f"Speed: {speed: .2f}mph")
-        self.text_gas.set_text(f"{gas: .1f}ppm")
+        self.text_gas.set_text(f"{gas: .1f}mmHg")
         self.text_hr.set_text(f"HR: {hr: .0f}bpm")
         self.text_pressure.set_text(f"{pressure: .2f}kpa")
         self.text_temperature.set_text(f"{temperature: .2f}\N{DEGREE SIGN}F")
@@ -315,12 +314,12 @@ class WHOMMPGUI(tk.Frame):
 
         # Unpack sensor values
         bike_input = in_signal[0]
-        gas_input = in_signal[1]
+        gas_input = (-0.6118 * in_signal[1]) + 273.73  # in_signal[1]
         pressure_input = in_signal[2]
         ir_input = in_signal[4]
         red_input = in_signal[5]
-        sat_input = in_signal[3]  # nonnononon
-        temperature_input = in_signal[6]
+        sat_input = 99  # in_signal[3]
+        temperature_input = in_signal[6] + 20
 
         # converts a signal from hall sensor to distance
         if bike_input - self.calc_handler.previous > 200:
@@ -387,7 +386,6 @@ class WHOMMPGUI(tk.Frame):
                                self.calc_handler.hr, pressure_input, temperature_input,
                                sat_input, ir_input, red_input, current)
 
-        # redraws all components of the
         self.canvas.draw_idle()
         # runs into race conditions if used recursively
         # threading.Timer(0.1, self.update_plot).start()
