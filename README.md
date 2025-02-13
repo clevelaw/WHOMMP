@@ -1,13 +1,14 @@
 # **W.H.O.M.M.P. – William’s Home Office Metabolic Monitoring Program**
-W.H.O.M.M.P. is a Python-based GUI utilizing Tkinter and Matplotlib libraries that allows monitoring and visualization of health parameters centered around a stationary bike. The program utilizes an Arduino as a data acquisition system. Real-time data is collected for the following parameters
-  
+W.H.O.M.M.P. is a Python-based GUI utilizing Tkinter and Matplotlib libraries that allows monitoring and visualization of health parameters centered around a stationary bike. The program utilizes an Arduino as a data acquisition system with several different sensors used for collecting data. This includes a hall-effect sensor to for the bike pedals, an MQ135 sensor for expired CO2, a MAX30105 for pulse oximetry and heart rate, a MPS20N0040D for air pressure, and a thermistor for body temperature. 
+
+  ![whommp_running](https://github.com/user-attachments/assets/ffd89a9c-31ff-4241-8131-00e553b0837a)
+
 ## **Collected data**
-**Pedal revolutions:** A built-in cadence sensor was rewired to send a signal straight to the Arduino instead of the bike's built-in 7-segment display.  
-**CO2 concentration:** MQ-135 sensor to measure CO2 concentrations in the air.  
-**IR and Red Light Absorbance:** MAX30102 Pulse + Oximeter sensor emits IR and Red Light that can then be collected and used to determine pulse and blood oxygen saturation. The sensor has recommended software, but after testing, this was found to be fairly inaccurate and slow.  
-**Air pressure sensor:** for future use in measuring respiratory parameters.  
-**Temperature:** Basic thermistor calibrated for physiological temperatures.  
-**SpO2:** Calculates the blood oxygen saturation level.  
+**Pedal revolutions:** used to derive distance traveled and speed  
+**CO2 concentration:** Measures exhaled CO2   
+**IR and Red Light Absorbance:** used to collect IR and Red Light absorbance on the skin that can then be used to determine pulse and blood oxygen saturation
+**Air pressure sensor:** for future use in measuring respiratory parameters
+**Temperature:** Basic thermistor calibrated for physiological temperatures
 
 ## **Derived parameters:**
 
@@ -17,10 +18,8 @@ W.H.O.M.M.P. is a Python-based GUI utilizing Tkinter and Matplotlib libraries th
 **Blood Oxygen saturation:** derived from IR and Red light absorbance, the algorithm for determining was based on this paper [Yosef et al 2018](https://pubmed.ncbi.nlm.nih.gov/30326552/)
 
 ## **Prerequisites**
-Python 3.x  
+Python 3.
 Arduino microcontroller  
-Arduino IDE  
-Required libraries (serial, time, datetime, tkinter, collections, threading, re, matplotlib)  
 Running the program  
 After installing all the required modules, the code is run from a single file and runs continuously until stopped. A more general-purpose data acquisition program is also available that displays only the raw data collected from the Arduino with no data processing and can be repurposed as needed.  
 
