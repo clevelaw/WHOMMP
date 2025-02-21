@@ -1,5 +1,5 @@
 # **W.H.O.M.M.P. – William’s Home Office Metabolic Monitoring Program**
-W.H.O.M.M.P. is a Python-based GUI utilizing Tkinter and Matplotlib libraries that allows monitoring and visualization of health parameters centered around a stationary bike. The program utilizes an Arduino as a data acquisition system with several different sensors used for collecting data. This includes a hall-effect sensor to for the bike pedals, an MQ135 sensor for expired CO2, a MAX30105 for pulse oximetry and heart rate, a MPS20N0040D for air pressure, and a thermistor for body temperature. 
+W.H.O.M.M.P. is a Python-based GUI utilizing Tkinter and Matplotlib libraries that allows monitoring and visualization of health parameters centered around a stationary bike. The program was designed to replace a simple 7 segment display to allow for all parameters from the bike (speed, total distance, elapsed time) to be graphed. The program utilizes an Arduino as a data acquisition system with several different sensors used for collecting data. This includes a hall-effect sensor to for the bike pedals, an MQ135 sensor for expired CO2, a MAX30105 for pulse oximetry and heart rate, a MPS20N0040D for air pressure, and a thermistor for body temperature. 
 
   ![whommp_running](https://github.com/user-attachments/assets/ffd89a9c-31ff-4241-8131-00e553b0837a)
 
@@ -27,7 +27,7 @@ After installing all the required modules, the code is run from a single file an
 The Arduino code is responsible only for the data collection. Some sensors included built-in libraries, but all data was collected raw to be analyzed live in the Python code.
 
 ## **Future Improvements**  
-The project was initially conceived as a method of measuring several metabolic parameters during exercise. This would include calorimetry, capnography, and the more basic data associated with a stationary bike. Currently, the biggest limitations with the setup are the sensors used for data acquisition. The CO2 sensor is designed for monitoring atmospheric CO2 and as a result does not have the resolution needed to measure live respiratory data for each inhalation/exhalation. A replacement sensor would be an NDIR sensor, which could acquire capnography data sufficient for this purpose but is significantly more expensive (~$400). Oxygen sensors are also a viable alternative but again at a higher price than the CO2 sensors.
+The project was initially conceived as a method of measuring several metabolic parameters during exercise. This would include calorimetry, capnography, and the more basic data associated with a stationary bike. Currently, the biggest limitations with the setup are the sensors used for data acquisition. The CO2 sensor is designed for monitoring atmospheric CO2 and as a result does not have the resolution needed to measure live respiratory data for each inhalation/exhalation. A replacement sensor would be an NDIR sensor, which could acquire capnography data sufficient for this purpose but is significantly more expensive (~$400). Oxygen sensors are also a viable alternative but come at a higher price than the CO2 sensors.
 
 **License**  
 This project is licensed under the MIT License.
